@@ -65,5 +65,11 @@ public class AccountService {
     public static void deleteAccount(String accountNumber) {
         AccountDAO accountDAO = new AccountDAOImpl();
         boolean result = accountDAO.deleteAccount(accountNumber);
+
+        if (result) {
+            System.out.println("Account deleted successfully");
+        } else {
+            System.out.println("Account delete failed");
+        }
     }
 }
