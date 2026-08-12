@@ -81,7 +81,22 @@ public class AccountDAOImpl implements AccountDAO {
     }
 
     @Override
-    public void updateAccount(Account account) {
+    public boolean updateAccount(Account account) {
+        String query = "UPDATE accounts SET first_name = ?, last_name = ?, pin_code = ? WHERE account_number = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pStmt = conn.prepareStatement(query);) {
+            pStmt.setString(1, account.getFirstName());
+            pStmt.setString(2, account.getLastName());
+            pStmt.setInt(3, account.getPinCode());
+            pStmt.setString(4, account.getAccountNumber());
+
+            int updatedRow = pStmt.executeUpdate();
+            return updatedRow > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     @Override
