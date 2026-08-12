@@ -17,10 +17,10 @@ public class AccountService {
         Account account = new Account();
         account.setFirstName("Royce");
         account.setLastName("Chua");
-        account.setPinCode(1111);
+        account.setPinCode(2222);
+        account.setAccountNumber("153982");
 
-        createAccount(account);
-
+        updateAccount(account);
     }
 
     public static Account findAccountByNumber(String accountNumber) {
@@ -28,7 +28,7 @@ public class AccountService {
         return accountDAO.getAccount(accountNumber);
     }
 
-    public static void createAccount(Account account) {
+    public static void createNewAccount(Account account) {
         AccountDAO accountDAO = new AccountDAOImpl();
         int assignedAccNum = AccountNumberMaker.randomAccountNumber();
 
@@ -48,5 +48,22 @@ public class AccountService {
         } else  {
             System.out.println("Account creation failed");
         }
+    }
+
+    public static void updateAccount(Account account) {
+        AccountDAO accountDAO = new AccountDAOImpl();
+        boolean result = accountDAO.updateAccountProfile(account);
+
+        if (result) {
+            System.out.println("Account updated successfully");
+        } else  {
+            System.out.println("Account update failed");
+        }
+
+    }
+
+    public static void deleteAccount(String accountNumber) {
+        AccountDAO accountDAO = new AccountDAOImpl();
+        boolean result = accountDAO.deleteAccount(accountNumber);
     }
 }

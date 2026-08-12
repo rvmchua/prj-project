@@ -4,6 +4,8 @@ import com.rvmchua.bank.dao.AccountDAO;
 import com.rvmchua.bank.model.Account;
 import com.rvmchua.bank.util.DatabaseConnection;
 
+import javax.xml.crypto.Data;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDateTime;
 
@@ -81,7 +83,7 @@ public class AccountDAOImpl implements AccountDAO {
     }
 
     @Override
-    public boolean updateAccount(Account account) {
+    public boolean updateAccountProfile(Account account) {
         String query = "UPDATE accounts SET first_name = ?, last_name = ?, pin_code = ? WHERE account_number = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -99,8 +101,36 @@ public class AccountDAOImpl implements AccountDAO {
         return false;
     }
 
-    @Override
-    public void deleteAccount(String accountId) {
+    public boolean updateBalance(String accountNumber, BigDecimal balance) {
+        String query = "UPDATE accounts SET balance = ? WHERE account_number = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pStmt = conn.prepareStatement(query);) {
+            pStmt.setBigDecimal(1, balance);
+            pStmt.setString(2, accountNumber);
 
+            int updatedRow = pStmt.executeUpdate();
+
+            return updatedRow > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean deleteAccount(String accountNumber) {
+        String query =  "DELETE FROM accounts WHERE account_number = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pStmt = conn.prepareStatement(query);) {
+            pStmt.setString(1, accountNumber);
+
+            int deletedRows = pStmt.executeUpdate();
+            return deletedRows > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }
