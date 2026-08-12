@@ -1,0 +1,71 @@
+@startuml
+actor "Bank Customer" as user
+actor MySQL as db <<database>>
+
+left to right direction
+rectangle "Banking Management System"{
+
+package "Auth Service" {
+    usecase "Login Account Holder" as (login)
+}
+
+package "Accounts Service" {
+    usecase "Create Account" as (create)
+    usecase "Balance Inquiry" as (balance)
+    usecase "List All Accounts" as (listAccounts)
+}
+
+package "Transactions Service" {
+    usecase "Deposit Funds" as (deposit)
+    usecase "Withdraw Funds" as (withdraw)
+    usecase "Transfer Funds" as (transfer)
+}
+
+package "Transaction History Service" {
+    usecase "View Transaction History" as (history)
+}
+
+package "Validation Service" {
+    usecase "Validate Sufficient Balance" as (sufficient)
+    usecase "Validate Positive Fund Amount" as (positive)
+    usecase "Validate Account Existence" as (exists)
+    usecase "Validate Other Account" as (toOtherAccount)
+    usecase "Validate Credentials" as (auth)
+}
+}
+
+user -down-> (create)
+user -d-> (balance)
+user -d-> (listAccounts)
+user -d-> (deposit)
+user -d-> (withdraw)
+user -d-> (transfer)
+user -d-> (history)
+
+db <-up- (create)
+db <-up- (balance)
+db <-up- (listAccounts)
+db <-up- (deposit)
+db <-up- (withdraw)
+db <-up- (transfer)
+db <-up- (history)
+db <-u- (login)
+
+(login) .d.> (auth) : <<include>>
+(balance) .d.> (exists) : <<include>>
+
+(deposit) .d.> (positive) : <<include>>
+(deposit) .d.> (exists) : <<include>>
+
+(withdraw) .r.> (sufficient) : <<include>>
+(withdraw) .l.> (positive) : <<include>>
+
+(transfer) .r.> (toOtherAccount) : <<include>>
+(transfer) .d.> (sufficient) : <<include>>
+(transfer) .l.> (positive) : <<include>>
+(transfer) .l.> (exists) : <<include>>
+
+(history) .d.> (exists) : <<include>>
+
+
+@enduml

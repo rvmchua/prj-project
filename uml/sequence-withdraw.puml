@@ -1,0 +1,63 @@
+@startuml
+
+actor       "Customer"              as c1
+participant "Banking Menu"          as menu
+participant "TransactionService"    as txnSvc
+participant "AccountService"        as accSvc
+participant "AccountDAOImpl"        as accDAO
+participant "TransactionDAOImpl"    as txnDAO
+database    MySQL                   as db
+
+c1 -> menu : Select withdraw option
+Activate menu
+
+menu -> txnSvc : withdraw()
+Activate txnSvc
+
+txnSvc --> c1 : prompt "Enter account number"
+c1 -> txnSvc: accountNumber
+
+txnSvc -> accSvc : findAccountNumberOrThrow(accountNumber)
+Activate accSvc
+
+accSvc -> accDAO : findByAccountNumber(accountNumber)
+Activate accDAO
+
+accDAO -> db : SELECT * FROM accounts WHERE account_number = ?
+db --> accDAO : ResultSet (1 row)
+accDAO --> accSvc : Optional<Account> [present]
+Deactivate accDAO
+
+accSvc --> txnSvc : Account
+Deactivate accSvc
+
+
+txnSvc --> c1 : prompt "Enter withdrawal amount"
+c1 -> txnSvc : amount (Ex. 500)
+note over txnSvc : Validate > 0
+
+alt sufficient funds (account.balance >= withdrawAmount)
+    txnSvc -> txnSvc : newBalance = account.getBalance() - withdrawAmount
+    txnSvc -> accDAO : updateBalance(accountNumber, newBalance)
+    Activate accDAO
+    accDAO -> db : UPDATE accounts SET balance = ? WHERE account_number = ?
+    db --> accDAO : 1 row updated
+    Deactivate accDAO
+
+    txnSvc -> txnSvc : build Transaction(WITHDRAW, amount, newBalance, refNo, "Cash Withdrawal")
+    txnSvc -> txnDAO : save(Transaction)
+    Activate txnDAO
+    txnDAO -> db : INSERT INTO transactions (...)
+    db --> txnDAO : generated transaction_id
+    Deactivate txnDAO
+
+    txnSvc --> c1 : print receipt(SUCCESS)
+
+else insufficient funds (account.balance < withdrawAmount)
+    txnSvc -> txnSvc : throw InsufficientBalanceException
+    txnSvc --> c1 : [ERROR] Insufficient balance.
+end
+
+
+
+@enduml
