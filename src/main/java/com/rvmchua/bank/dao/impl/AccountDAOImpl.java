@@ -4,14 +4,13 @@ import com.rvmchua.bank.dao.AccountDAO;
 import com.rvmchua.bank.model.Account;
 import com.rvmchua.bank.util.DatabaseConnection;
 
-import javax.xml.crypto.Data;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDateTime;
 
 public class AccountDAOImpl implements AccountDAO {
     @Override
-    public Account getAccount(String accountId) {
+    public Account getAccountById(String accountId) {
         Account account = new Account();
         String query = "SELECT * FROM accounts where account_number = ?";
 
@@ -45,13 +44,9 @@ public class AccountDAOImpl implements AccountDAO {
              PreparedStatement pStmt = conn.prepareStatement(query);) {
 
             pStmt.setString(1,account.getAccountNumber());
-            System.out.println(account.getAccountNumber());
             pStmt.setString(2,account.getFirstName());
-            System.out.println(account.getFirstName());
             pStmt.setString(3,account.getLastName());
-            System.out.println(account.getLastName());
             pStmt.setInt(4,account.getPinCode());
-            System.out.println(account.getPinCode());
 
             int createdRow = pStmt.executeUpdate();
 
@@ -101,6 +96,7 @@ public class AccountDAOImpl implements AccountDAO {
         return false;
     }
 
+    @Override
     public boolean updateBalance(String accountNumber, BigDecimal balance) {
         String query = "UPDATE accounts SET balance = ? WHERE account_number = ?";
         try (Connection conn = DatabaseConnection.getConnection();

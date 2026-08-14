@@ -1,29 +1,27 @@
 package com.rvmchua.bank.menu;
 
+import com.rvmchua.bank.model.Account;
 import com.rvmchua.bank.service.AccountService;
 import com.rvmchua.bank.service.TransactionService;
-import lombok.NoArgsConstructor;
+
 
 import java.util.Scanner;
 
-public class BankingMenu {
+public class AccountDashboard {
     private AccountService accountService;
     private TransactionService transactionService;
-    private Scanner input;
 
+    public static void menu(Scanner input, Account account) {
 
-    public BankingMenu() {
-        input = new Scanner(System.in);
-
-    }
-
-    public void start() {
-        System.out.println("Welcome to Banking Menu");
         System.out.println("Please select your option: ");
         String option = input.nextLine();
 
-        switch (option) {
-            case "1": 
-        }
+        System.out.println("You input: " + option);
+        System.exit(0);
+
+    }
+
+    private static void printHeader() {
+        System.out.println("-----------------------------------------------------");
     }
 }
