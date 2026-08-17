@@ -40,7 +40,7 @@ public class LoginMenu {
             Account account = authResult.get();
             System.out.println("Successfully logged in! Welcome, " +  account.getFirstName() + " " + account.getLastName());
             promptEnterToContinue(input);
-            AccountDashboard.menu(input, account);
+            AccountDashboard.menu(input, account, accountDAO);
 
         } else  {
             System.out.println("Invalid account number or PIN code!");

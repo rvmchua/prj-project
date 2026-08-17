@@ -2,8 +2,6 @@ package com.rvmchua.bank.service;
 
 import com.rvmchua.bank.dao.AccountDAO;
 import com.rvmchua.bank.dao.TransactionDAO;
-import com.rvmchua.bank.dao.impl.AccountDAOImpl;
-import com.rvmchua.bank.dao.impl.TransactionDAOImpl;
 import com.rvmchua.bank.model.Account;
 import com.rvmchua.bank.model.Transaction;
 import com.rvmchua.bank.model.enums.TransactionType;
@@ -15,115 +13,152 @@ import java.util.List;
 import java.util.Scanner;
 
 public class TransactionService {
-    public static void main(String[] args) {
 
-//        deposit("1000001");
-//        withdraw("1344391");
-//        getTransactionById("1000001");
-//        transfer("1000001","1344391");
-//        transactionHistory("1378886");
-    }
-
-    public static void withdraw(String accountNumber) {
-        Scanner input = new Scanner(System.in);
+    public static void withdraw(Account account, AccountDAO accountDAO, TransactionDAO transactionDAO, Scanner input) {
         BigDecimal newBalance;
         boolean accountResult = false;
-        boolean transactionResult = false;
+        String accountNumber = account.getAccountNumber();
+        Transaction latestTransaction;
 
         TransactionType type = TransactionType.WITHDRAW;
-        Account account = AccountService.findAccountByNumber(accountNumber);
-        AccountDAO accountDAO = new AccountDAOImpl();
-        TransactionDAO transactionDAO = new TransactionDAOImpl();
 
         while (!accountResult) {
-            System.out.print("Enter amount to withdraw: ");
+            System.out.print("Enter amount to withdraw: Php ");
             BigDecimal amount = new BigDecimal(input.next());
 
             if (isSufficientFunds(account, amount)) {
                 newBalance = account.getBalance().subtract(amount);
-                accountResult = accountDAO.updateBalance(accountNumber, newBalance);
-                transactionResult = transactionDAO.saveTransaction(buildTransaction(account, type, amount, newBalance));
-                System.out.println("You withdrawn: " + amount.toString());
-                System.out.println("Your balance: " + newBalance.toString());
+                accountResult = accountDAO.updateBalance(account.getAccountNumber(), newBalance);
+                transactionDAO.saveTransaction(buildTransaction(account, type, amount, newBalance));
+                latestTransaction = transactionDAO.getLatestTransaction(account.getAccountNumber());
+                System.out.println("-----------------------------------------------------");
+                System.out.println("Your transaction ID: " + latestTransaction.getTransactionId());
+                System.out.println("You withdrawn: Php " + amount);
+                System.out.println("Your balance: Php " + newBalance);
+                System.out.println("-----------------------------------------------------");
+                account = accountDAO.getAccountById(accountNumber);
             } else {
                 System.out.println("Insufficient funds!");
             }
         }
-        input.close();
-
+        input.nextLine();
+        promptEnterToContinue(input);
     }
 
-    public static void deposit(String accountNumber) {
-        Scanner input = new Scanner(System.in);
+    public static void deposit(Account account, AccountDAO accountDAO, TransactionDAO transactionDAO, Scanner input) {
         BigDecimal newBalance;
         boolean accountResult = false;
-        boolean transactionResult = false;
+        boolean transactionResult;
+        Transaction latestTransaction;
+        String accountNumber = account.getAccountNumber();
 
         TransactionType type = TransactionType.DEPOSIT;
-        Account account = AccountService.findAccountByNumber(accountNumber);
-        AccountDAO accountDAO = new AccountDAOImpl();
-        TransactionDAO transactionDAO = new TransactionDAOImpl();
 
         while (!accountResult) {
-            System.out.print("Enter amount to deposit: ");
+            System.out.print("Enter amount to deposit: Php ");
             BigDecimal amount = new BigDecimal(input.next());
             newBalance = account.getBalance().add(amount);
-            accountResult = accountDAO.updateBalance(accountNumber, newBalance);
+            accountResult = accountDAO.updateBalance(account.getAccountNumber(), newBalance);
             transactionResult = transactionDAO.saveTransaction(buildTransaction(account, type, amount, newBalance));
 
             if (!accountResult || !transactionResult) {
                 System.out.println("Unable to deposit funds! Try again later!");
                 break;
             }
-
-            System.out.println("You deposited: " + amount.toString());
-            System.out.println("Your balance: " + newBalance.toString());
+            account = accountDAO.getAccountById(accountNumber);
+            latestTransaction = transactionDAO.getLatestTransaction(account.getAccountNumber());
+            System.out.println("-----------------------------------------------------");
+            System.out.println("Your transaction ID: " + latestTransaction.getTransactionId());
+            System.out.println("You deposited: Php " + amount);
+            System.out.println("Your balance: Php " + newBalance);
+            System.out.println("-----------------------------------------------------");
         }
-        input.close();
+        input.nextLine();
+        promptEnterToContinue(input);
     }
 
-    public static void transfer(String fromAccountNumber, String toAccountNumber) {
-        Scanner input = new Scanner(System.in);
+    public static void transfer(Account sender, AccountDAO accountDAO, TransactionDAO transactionDAO, Scanner input) {
         BigDecimal amount;
-        boolean accountResult = false;
+        Account receiver = null;
+        String accountNumber = sender.getAccountNumber();
 
         TransactionType type = TransactionType.TRANSFER;
-        Account sender =  AccountService.findAccountByNumber(fromAccountNumber);
-        Account receiver =  AccountService.findAccountByNumber(toAccountNumber);
-        AccountDAO accountDAO = new AccountDAOImpl();
-        TransactionDAO transactionDAO = new TransactionDAOImpl();
 
-        while (!accountResult) {
-            System.out.print("Enter amount to transfer: ");
-            amount = new BigDecimal(input.next());
+        while (receiver == null) {
+            System.out.print("Enter account number of receiver (or 'cancel' to exit): ");
+            String receivingAccountNumber = input.nextLine().trim();
 
-            if (isSufficientFunds(sender, amount)) {
-                BigDecimal newBalanceSender;
-                BigDecimal newBalanceReceiver;
+            if ("cancel".equalsIgnoreCase(receivingAccountNumber)) {
+                System.out.println("Transfer canceled.");
+                return;
+            }
 
-                newBalanceSender = sender.getBalance().subtract(amount);
-                newBalanceReceiver = receiver.getBalance().add(amount);
+            if (receivingAccountNumber.equals(sender.getAccountNumber())) {
+                System.out.println("You cannot transfer money to your own account!");
+                continue;
+            }
 
-                boolean isUpdateSenderSuccess = accountDAO.updateBalance(fromAccountNumber, newBalanceSender);
-                boolean isUpdateReceiverSuccess = accountDAO.updateBalance(toAccountNumber, newBalanceReceiver);
-                if (isUpdateSenderSuccess && isUpdateReceiverSuccess) {
-                    accountResult = true;
-                    boolean isTxnSenderSuccess = transactionDAO.saveTransaction(buildTransaction(sender, type, TransferType.SENDER, amount, newBalanceSender));
-                    boolean isTxnReceiverSuccess = transactionDAO.saveTransaction(buildTransaction(receiver, type, TransferType.RECEIVER, amount, newBalanceReceiver));
-                    System.out.println("Successfully transferred " + amount +  " from " + fromAccountNumber + " to " + toAccountNumber);
-                } else {
-                    System.out.println("Insufficient funds!");
-                }
+            receiver = AccountService.findAccountByNumber(receivingAccountNumber, accountDAO);
+            if (receiver == null) {
+                System.out.println("Unable to find account by number! Please try again.");
             }
         }
 
+        boolean transferSuccess = false;
+        while (!transferSuccess) {
+            System.out.print("Enter amount to transfer: Php ");
+            String amountInput = input.nextLine().trim();
+
+            try {
+                amount = new BigDecimal(amountInput);
+
+                if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                    System.out.println("Transfer amount must be greater than zero.");
+                    continue;
+                }
+
+                if (!isSufficientFunds(sender, amount)) {
+                    System.out.println("Insufficient funds! Your current balance is: Php " + sender.getBalance());
+                    continue;
+                }
+
+                BigDecimal newBalanceSender = sender.getBalance().subtract(amount);
+                BigDecimal newBalanceReceiver = receiver.getBalance().add(amount);
+
+                boolean isUpdateSenderSuccess = accountDAO.updateBalance(sender.getAccountNumber(), newBalanceSender);
+                boolean isUpdateReceiverSuccess = accountDAO.updateBalance(receiver.getAccountNumber(), newBalanceReceiver);
+
+                if (isUpdateSenderSuccess && isUpdateReceiverSuccess) {
+                    sender.setBalance(newBalanceSender);
+                    receiver.setBalance(newBalanceReceiver);
+
+                    transactionDAO.saveTransaction(buildTransaction(sender, type, TransferType.SENDER, amount, newBalanceSender));
+                    transactionDAO.saveTransaction(buildTransaction(receiver, type, TransferType.RECEIVER, amount, newBalanceReceiver));
+
+                    transferSuccess = true;
+                    sender = accountDAO.getAccountById(accountNumber);
+
+                    Transaction latestTransaction = transactionDAO.getLatestTransaction(sender.getAccountNumber());
+                    System.out.println("-----------------------------------------------------");
+                    System.out.println("Your transaction ID: " + latestTransaction.getTransactionId());
+                    System.out.println("Successfully transferred " + amount + " from " + sender.getAccountNumber() + " to " + receiver.getAccountNumber());
+                    System.out.println("Your current balance: Php " + sender.getBalance());
+                    System.out.println("-----------------------------------------------------");
+                } else {
+                    System.out.println("Database update failed. Please try again later.");
+                    break;
+                }
+
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid amount entered! Please enter a valid number.");
+            }
+        }
+        input.nextLine();
+        promptEnterToContinue(input);
     }
 
-    public static void findTransactionById(String accountNumber) {
-        Scanner input = new Scanner(System.in);
-        TransactionDAO transactionDAO = new TransactionDAOImpl();
+    public static void findTransactionById(TransactionDAO transactionDAO, Scanner input) {
         boolean txnResult = false;
-        Account account = AccountService.findAccountByNumber(accountNumber);
 
         while (!txnResult) {
             System.out.print("Please enter the transaction id: ");
@@ -137,10 +172,10 @@ public class TransactionService {
                 System.out.println("Unable to find transaction with id: " + txnId);
             }
         }
+        promptEnterToContinue(input);
     }
 
-    public static void transactionHistory(String accountNumber) {
-        TransactionDAO transactionDAO = new TransactionDAOImpl();
+    public static void transactionHistory(String accountNumber, TransactionDAO transactionDAO, Scanner input) {
         List<Transaction> transactionHistory = transactionDAO.getTransactionHistory(accountNumber);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy hh:mm:ss a");
 
@@ -156,13 +191,14 @@ public class TransactionService {
                 System.out.println("Transaction number: " + counter);
                 System.out.println("Transaction ID: " + transaction.getTransactionId());
                 System.out.println("Transaction Type: " + transaction.getTransactionType());
-                System.out.println("Amount: " + transaction.getAmount());
-                System.out.println("Remaining balance: " + transaction.getBalanceAfter());
+                System.out.println("Amount: Php " + transaction.getAmount());
+                System.out.println("Remaining balance: Php " + transaction.getBalanceAfter());
                 System.out.println("Date of transaction: " + transaction.getCreatedAt().format(formatter));
                 System.out.println("-----------------------------------------------------");
                 counter++;
             }
         }
+        promptEnterToContinue(input);
     }
 
 
@@ -202,5 +238,10 @@ public class TransactionService {
         }
 
         return transaction;
+    }
+
+    private static void promptEnterToContinue(Scanner input) {
+        System.out.println("Press ENTER to continue...");
+        input.nextLine();
     }
 }

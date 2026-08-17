@@ -7,6 +7,8 @@ import com.rvmchua.bank.util.DatabaseConnection;
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AccountDAOImpl implements AccountDAO {
     @Override
@@ -112,6 +114,29 @@ public class AccountDAOImpl implements AccountDAO {
             e.printStackTrace();
         }
         return false;
+    }
+
+    @Override
+    public List<Account> getAllAccounts() {
+        List<Account> allAccounts = new ArrayList<>();
+        String query = "SELECT account_number, first_name, last_name FROM accounts";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement();) {
+            ResultSet rs = stmt.executeQuery(query);
+
+            while (rs.next()) {
+                Account account = new Account();
+                account.setAccountNumber(rs.getString("account_number"));
+                account.setFirstName(rs.getString("first_name"));
+                account.setLastName(rs.getString("last_name"));
+                allAccounts.add(account);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return allAccounts;
     }
 
     @Override

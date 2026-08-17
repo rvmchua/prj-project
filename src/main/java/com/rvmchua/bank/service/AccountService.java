@@ -5,16 +5,12 @@ import com.rvmchua.bank.dao.impl.AccountDAOImpl;
 import com.rvmchua.bank.model.Account;
 import com.rvmchua.bank.util.AccountNumberMaker;
 
+import java.util.List;
 import java.util.Scanner;
 
 public class AccountService {
 
-    public static void main(String[] args) {
-
-    }
-
-    public static Account findAccountByNumber(String accountNumber) {
-        AccountDAO accountDAO = new AccountDAOImpl();
+    public static Account findAccountByNumber(String accountNumber, AccountDAO accountDAO) {
         return accountDAO.getAccountById(accountNumber);
     }
 
@@ -85,19 +81,41 @@ public class AccountService {
         }
     }
 
-    public static void balanceInquiry(String accountNumber) {
-        AccountDAO accountDAO = new AccountDAOImpl();
-        Account account = accountDAO.getAccountById(accountNumber);
+    public static void balanceInquiry(Account account, Scanner input) {
+        System.out.println("Your account balance is: Php " + account.getBalance());
+        System.out.println("----------------------------------------------------");
+        promptEnterToContinue(input);
+    }
 
-        System.out.println("Account balance: " + account.getBalance());
+    public static void showAllAccounts() {
+        AccountDAO accountDAO = new AccountDAOImpl();
+        List<Account> allAccounts = accountDAO.getAllAccounts();
+
+        if (allAccounts.isEmpty()) {
+            System.out.println("----------------------------------------------------");
+            System.out.println("No accounts found");
+            System.out.println("----------------------------------------------------");
+        } else {
+            System.out.println("Accounts available");
+            for (Account account : allAccounts) {
+                System.out.println("----------------------------------------------------");
+                System.out.println("Account number: " + account.getAccountNumber());
+                System.out.printf("Account First Name: %s\n", account.getFirstName());
+                System.out.printf("Account Last Name: %s\n", account.getLastName());
+                System.out.println("----------------------------------------------------");
+            }
+        }
     }
 
     private static void printHeader(){
         System.out.println("-----------------------------------------------------");
         System.out.println("Welcome to the Banco de Yero!");
-    }
-
-    private static void printFooter(){
         System.out.println("----------------------------------------------------");
     }
+
+    private static void promptEnterToContinue(Scanner input) {
+        System.out.println("Press ENTER to continue...");
+        input.nextLine();
+    }
+
 }

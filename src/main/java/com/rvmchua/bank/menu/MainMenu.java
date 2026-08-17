@@ -21,7 +21,8 @@ public class MainMenu {
                 switch (choice) {
                     case 1 -> AccountService.createNewAccount(input);
                     case 2 -> LoginMenu.start(input);
-                    case 3 -> {
+                    case 3 -> AccountService.showAllAccounts();
+                    case 4 -> {
                         exit();
                         running = false;
                     }
@@ -50,7 +51,8 @@ public class MainMenu {
         System.out.println("Select your option:");
         System.out.println("1. Create an account");
         System.out.println("2. Login your account");
-        System.out.println("3. Exit");
+        System.out.println("3. List all accounts");
+        System.out.println("4. Exit");
         System.out.println("---------------------------------------------------");
     }
 }

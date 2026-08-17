@@ -90,4 +90,28 @@ public class TransactionDAOImpl implements TransactionDAO {
         }
         return transaction;
     }
+
+    @Override
+    public Transaction getLatestTransaction(String accountNumber) {
+        Transaction transaction = new Transaction();
+        String query = "SELECT * FROM transactions WHERE account_number = ? ORDER BY created_at DESC LIMIT 1";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pStmt = conn.prepareStatement(query);) {
+            pStmt.setString(1, accountNumber);
+
+            ResultSet rs = pStmt.executeQuery();
+            while (rs.next()) {
+                transaction.setTransactionId(rs.getString("transaction_id"));
+                transaction.setAccountNumber(rs.getString("account_number"));
+                transaction.setTransactionType(TransactionType.valueOf(rs.getString("type")));
+                transaction.setAmount(rs.getBigDecimal("amount"));
+                transaction.setBalanceAfter(rs.getBigDecimal("balance_after"));
+                transaction.setCreatedAt(rs.getObject("created_at", LocalDateTime.class));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return transaction;
+    }
 }
