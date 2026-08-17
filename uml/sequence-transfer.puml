@@ -1,0 +1,74 @@
+@startuml
+actor       "Customer"              as c1       <<authenticated>>
+participant "Account Dashboard"     as dash
+participant "TransactionService"    as txnSvc
+participant "AccountService"        as accSvc
+participant "AccountDAOImpl"        as accDAO
+participant "TransactionDAOImpl"    as txnDAO
+database    MySQL                   as db
+
+c1 -> dash : Select option 5 "Transfer"
+Activate dash
+
+dash -> txnSvc : transfer(senderAccount)
+Activate txnSvc
+
+txnSvc --> c1 : Prompt ("Enter account number of receiver")
+c1 -> txnSvc : accountNumber (e.g. 10000001)
+note over txnSvc : Validate senderId != receiverId
+
+txnSvc -> accSvc : findAccountByNumber (rcvAcctNum)
+Activate accSvc
+accSvc -> accDAO : getAccountById (accountNumber)
+Activate accDAO
+accDAO -> db : SELECT * FROM accounts WHERE account_number = ?
+db --> accDAO : ResultSet = 1
+accDAO --> accSvc : Account
+Deactivate accDAO
+accSvc --> txnSvc : receiverAccount
+
+alt Receiver account exists
+    txnSvc --> c1 : Prompt ("Enter amount to send")
+    c1 -> txnSvc : amount (E.g. 500)
+    note over txnSvc : Validate Amount > Php 0
+
+    alt sufficient funds (sender.balance >= sendAmount)
+        txnSvc -> txnSvc : senderBalance = sender.getBalance().subtract(amount)
+        txnSvc -> txnSvc : receiverBalance = receiver.getBalance().add(amount)
+        txnSvc -> accDAO : updateBalance(sender.getBalance(), newBalance)
+        Activate accDAO
+        accDAO -> db : UPDATE accounts SET balance = ? WHERE account_number = ?
+        db --> accDAO : 1 row updated
+        txnSvc -> accDAO : updateBalance(receiver.getBalance(), newBalance)
+        accDAO -> db : UPDATE accounts SET balance = ? WHERE account_number = ?
+        db --> accDAO : 1 row updated
+        Deactivate accDAO
+
+        txnSvc -> txnSvc : build 2 Transactions for sender and receiver
+        txnSvc -> txnDAO : saveTransaction(senderTransaction)
+        Activate txnDAO
+        txnSvc -> txnDAO : saveTransaction(receiverTransaction)
+
+        txnDAO -> db : INSERT INTO transactions (...) VALUES (...)
+        txnDAO -> db : INSERT INTO transactions (...) VALUES (...)
+        db --> txnDAO : generated transaction_id
+        db --> txnDAO : generated transaction_id
+
+
+        txnSvc -> txnDAO : getLatestTransaction(accountNumber)
+        txnDAO -> db : SELECT (...) FROM (...) WHERE (...) ORDER BY created_at DESC LIMIT 1
+        db --> txnDAO : ResultSet = 1
+        txnDAO --> txnSvc : Transaction
+        Deactivate txnDAO
+
+        txnSvc --> c1 : print receipt(SUCCESS) [Transaction ID incl.]
+
+    else insufficient funds (account.balance < withdrawAmount)
+        txnSvc --> c1 : "Insufficient balance. Current balance: [AMOUNT]"
+    end
+
+else
+    txnSvc --> c1 : "Unable to find account by number! Please try again."
+end
+
+@enduml

@@ -21,7 +21,7 @@ public class MainMenu {
                 switch (choice) {
                     case 1 -> AccountService.createNewAccount(input);
                     case 2 -> LoginMenu.start(input);
-                    case 3 -> AccountService.showAllAccounts();
+                    case 3 -> AccountService.showAllAccounts(input);
                     case 4 -> {
                         exit();
                         running = false;

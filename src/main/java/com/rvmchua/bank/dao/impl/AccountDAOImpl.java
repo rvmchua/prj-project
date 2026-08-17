@@ -2,7 +2,7 @@ package com.rvmchua.bank.dao.impl;
 
 import com.rvmchua.bank.dao.AccountDAO;
 import com.rvmchua.bank.model.Account;
-import com.rvmchua.bank.util.DatabaseConnection;
+import com.rvmchua.bank.config.DatabaseConnection;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -14,7 +14,7 @@ public class AccountDAOImpl implements AccountDAO {
     @Override
     public Account getAccountById(String accountId) {
         Account account = new Account();
-        String query = "SELECT * FROM accounts where account_number = ?";
+        String query = "SELECT * FROM accounts WHERE account_number = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query);) {
@@ -40,7 +40,7 @@ public class AccountDAOImpl implements AccountDAO {
 
     @Override
     public boolean createAccount(Account account) {
-        String query = "INSERT INTO accounts (account_number, first_name, last_name, pin_code) VALUES (?, ?, ?, ?)";
+        String query = "INSERT INTO accounts (account_number, first_name, last_name, pin_code, balance) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pStmt = conn.prepareStatement(query);) {
@@ -49,6 +49,7 @@ public class AccountDAOImpl implements AccountDAO {
             pStmt.setString(2,account.getFirstName());
             pStmt.setString(3,account.getLastName());
             pStmt.setInt(4,account.getPinCode());
+            pStmt.setBigDecimal(5,account.getBalance());
 
             int createdRow = pStmt.executeUpdate();
 
@@ -119,7 +120,7 @@ public class AccountDAOImpl implements AccountDAO {
     @Override
     public List<Account> getAllAccounts() {
         List<Account> allAccounts = new ArrayList<>();
-        String query = "SELECT account_number, first_name, last_name FROM accounts";
+        String query = "SELECT account_number, first_name, last_name, balance FROM accounts";
 
         try (Connection conn = DatabaseConnection.getConnection();
              Statement stmt = conn.createStatement();) {
@@ -130,6 +131,7 @@ public class AccountDAOImpl implements AccountDAO {
                 account.setAccountNumber(rs.getString("account_number"));
                 account.setFirstName(rs.getString("first_name"));
                 account.setLastName(rs.getString("last_name"));
+                account.setBalance(rs.getBigDecimal("balance"));
                 allAccounts.add(account);
             }
 

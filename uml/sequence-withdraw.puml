@@ -1,63 +1,47 @@
 @startuml
 
-actor       "Customer"              as c1
-participant "Banking Menu"          as menu
+actor       "Customer"              as c1       <<authenticated>>
+participant "Account Dashboard"     as dash
 participant "TransactionService"    as txnSvc
-participant "AccountService"        as accSvc
 participant "AccountDAOImpl"        as accDAO
 participant "TransactionDAOImpl"    as txnDAO
 database    MySQL                   as db
 
-c1 -> menu : Select withdraw option
-Activate menu
+c1 -> dash : Select option 3 "withdraw"
+Activate dash
 
-menu -> txnSvc : withdraw()
+dash -> txnSvc : withdraw(account)
 Activate txnSvc
 
-txnSvc --> c1 : prompt "Enter account number"
-c1 -> txnSvc: accountNumber
 
-txnSvc -> accSvc : findAccountNumberOrThrow(accountNumber)
-Activate accSvc
-
-accSvc -> accDAO : findByAccountNumber(accountNumber)
-Activate accDAO
-
-accDAO -> db : SELECT * FROM accounts WHERE account_number = ?
-db --> accDAO : ResultSet (1 row)
-accDAO --> accSvc : Optional<Account> [present]
-Deactivate accDAO
-
-accSvc --> txnSvc : Account
-Deactivate accSvc
-
-
-txnSvc --> c1 : prompt "Enter withdrawal amount"
+txnSvc --> c1 : prompt "Enter amount to withdraw"
 c1 -> txnSvc : amount (Ex. 500)
-note over txnSvc : Validate > 0
+
+note over txnSvc : Validate Amount > Php 0
 
 alt sufficient funds (account.balance >= withdrawAmount)
-    txnSvc -> txnSvc : newBalance = account.getBalance() - withdrawAmount
-    txnSvc -> accDAO : updateBalance(accountNumber, newBalance)
+    txnSvc -> txnSvc : newBalance = account.getBalance().subtract(amount)
+    txnSvc -> accDAO : updateBalance(account.getBalance(), newBalance)
     Activate accDAO
     accDAO -> db : UPDATE accounts SET balance = ? WHERE account_number = ?
     db --> accDAO : 1 row updated
     Deactivate accDAO
 
-    txnSvc -> txnSvc : build Transaction(WITHDRAW, amount, newBalance, refNo, "Cash Withdrawal")
-    txnSvc -> txnDAO : save(Transaction)
+    txnSvc -> txnSvc : build Transaction(account, type, amount, newBalance)
+    txnSvc -> txnDAO : saveTransaction(Transaction)
     Activate txnDAO
-    txnDAO -> db : INSERT INTO transactions (...)
+    txnDAO -> db : INSERT INTO transactions (...) VALUES (...)
     db --> txnDAO : generated transaction_id
+    txnSvc -> txnDAO : getLatestTransaction(accountNumber)
+    txnDAO -> db : SELECT (...) FROM (...) WHERE (...) ORDER BY created_at DESC LIMIT 1
+    db --> txnDAO : ResultSet = 1
+    txnDAO --> txnSvc : Transaction
     Deactivate txnDAO
 
-    txnSvc --> c1 : print receipt(SUCCESS)
+    txnSvc --> c1 : print receipt(SUCCESS) [Transaction ID incl.]
 
 else insufficient funds (account.balance < withdrawAmount)
-    txnSvc -> txnSvc : throw InsufficientBalanceException
-    txnSvc --> c1 : [ERROR] Insufficient balance.
+    txnSvc --> c1 : "Insufficient balance. Current balance: [AMOUNT]"
 end
-
-
 
 @enduml

@@ -1,0 +1,46 @@
+@startuml
+
+actor       "Customer"          as  c1
+participant "Main Menu"         as  main
+participant "Login Menu"        as login
+participant "Auth Service"      as auth
+participant "AccountDAOImpl"    as accDAO
+database    "MySQL"             as db
+
+c1 -> main : Select login account
+Activate main
+
+main -> login : start()
+Activate login
+
+login --> c1 : prompt "Enter account number"
+c1 -> login : accountNumber
+login --> c1 : prompt "Enter 4 digit PIN"
+c1 -> login : pinCode
+
+login -> auth: authenticate(accountNumber, enteredPin)
+Activate auth
+
+auth -> accDAO : getAccountByNumber(accountNumber)
+Activate accDAO
+
+accDAO -> db : SELECT * FROM accounts WHERE account_number = ?
+db --> accDAO : ResultSet (1 result)
+
+accDAO --> auth : Account
+Deactivate accDAO
+
+auth --> login : Optional<Account> authResult
+Deactivate auth
+
+alt correct pin (enteredPin == account PIN)
+    login --> c1 : Return Account object, go to Account Dashboard
+
+else account == null
+    login --> c1 : prompt "Invalid account number or PIN code"
+
+else enteredPin != account PIN
+    login --> c1 : prompt "Invalid account number or PIN code"
+end
+
+@enduml

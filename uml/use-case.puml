@@ -1,8 +1,15 @@
 @startuml
 actor "Bank Customer" as user
+
 actor MySQL as db <<database>>
 
 left to right direction
+
+rectangle "Customer Type" {
+    actor "Account Holder" as old
+    actor "New Customer" as new
+}
+
 rectangle "Banking Management System"{
 
 package "Auth Service" {
@@ -19,10 +26,8 @@ package "Transactions Service" {
     usecase "Deposit Funds" as (deposit)
     usecase "Withdraw Funds" as (withdraw)
     usecase "Transfer Funds" as (transfer)
-}
-
-package "Transaction History Service" {
-    usecase "View Transaction History" as (history)
+    usecase "View Latest 10 Transactions" as (history)
+    usecase "Find Transaction by ID" as (findId)
 }
 
 package "Validation Service" {
@@ -34,13 +39,19 @@ package "Validation Service" {
 }
 }
 
-user -down-> (create)
-user -d-> (balance)
+user -d-> new
+user -d-> old
+
+old -d-> (login)
+
+new -down-> (create)
+(login) -d-> (balance)
 user -d-> (listAccounts)
-user -d-> (deposit)
-user -d-> (withdraw)
-user -d-> (transfer)
-user -d-> (history)
+(login) -d-> (deposit)
+(login) -d-> (withdraw)
+(login) -d-> (transfer)
+(login) -d-> (history)
+(login) -d-> (findId)
 
 db <-up- (create)
 db <-up- (balance)
@@ -50,6 +61,7 @@ db <-up- (withdraw)
 db <-up- (transfer)
 db <-up- (history)
 db <-u- (login)
+db <-u- (findId)
 
 (login) .d.> (auth) : <<include>>
 (balance) .d.> (exists) : <<include>>

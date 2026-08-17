@@ -1,4 +1,4 @@
-package com.rvmchua.bank.util;
+package com.rvmchua.bank.config;
 
 import java.io.IOException;
 import java.io.InputStream;

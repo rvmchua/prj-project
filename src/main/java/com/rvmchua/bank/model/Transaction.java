@@ -1,6 +1,6 @@
 package com.rvmchua.bank.model;
 
-import com.rvmchua.bank.model.enums.TransactionType;
+import com.rvmchua.bank.enums.TransactionType;
 import lombok.*;
 
 import java.math.BigDecimal;

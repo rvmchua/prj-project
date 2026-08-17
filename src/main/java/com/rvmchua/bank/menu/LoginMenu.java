@@ -10,11 +10,10 @@ import java.util.Optional;
 import java.util.Scanner;
 
 public class LoginMenu {
+    private static final AccountDAO accountDAO = new AccountDAOImpl();
+    private static final AuthService authService = new AuthService(accountDAO);
 
     public static void start (Scanner input) {
-        AccountDAO accountDAO = new AccountDAOImpl();
-        AuthService authService = new AuthService(accountDAO);
-
         printHeader();
         System.out.println("Welcome to the Login Menu!");
 
@@ -38,7 +37,8 @@ public class LoginMenu {
 
         if (authResult.isPresent()) {
             Account account = authResult.get();
-            System.out.println("Successfully logged in! Welcome, " +  account.getFirstName() + " " + account.getLastName());
+            System.out.println("Successfully logged in! Welcome, " +
+                    account.getFirstName() + " " + account.getLastName());
             promptEnterToContinue(input);
             AccountDashboard.menu(input, account, accountDAO);
 

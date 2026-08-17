@@ -1,4 +1,4 @@
-package com.rvmchua.bank.model.enums;
+package com.rvmchua.bank.enums;
 
 public enum TransactionType {
     WITHDRAW,

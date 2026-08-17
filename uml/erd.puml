@@ -1,27 +1,30 @@
 @startuml
-'https://plantuml.com/class-diagram
+title Banking App Database - Entity Relationship Diagram
+skinparam linetype ortho
+hide circle
 
-abstract class AbstractList
-abstract AbstractCollection
-interface List
-interface Collection
-
-List <|-- AbstractList
-Collection <|-- AbstractCollection
-
-Collection <|- List
-AbstractCollection <|- AbstractList
-AbstractList <|-- ArrayList
-
-class ArrayList {
-Object[] elementData
-size()
+entity "accounts" as accounts {
+  * **entry_id** : INT(11) <<PK, AUTO_INCREMENT>>
+  --
+  * **account_number** : BIGINT(20) <<UK>>
+  * first_name : VARCHAR(50)
+  * last_name : VARCHAR(50)
+  * pin_code : BIGINT(6)
+  * balance : DECIMAL(15,2) = 0.00
+  * created_at : DATETIME
+  * updated_at : DATETIME
 }
 
-enum TimeUnit {
-DAYS
-HOURS
-MINUTES
+entity "transactions" as transactions {
+  * **transaction_id** : BIGINT(20) <<PK, AUTO_INCREMENT>>
+  --
+  * **account_number** : BIGINT(20) <<FK>>
+  * type : ENUM('WITHDRAW','DEPOSIT','TRANSFER')
+  * amount : DECIMAL(15,2)
+  * balance_after : DECIMAL(15,2)
+  * created_at : DATETIME
 }
+
+accounts ||--o{ transactions : "1 : N (fk_transactions_accounts)"
 
 @enduml

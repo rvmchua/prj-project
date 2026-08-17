@@ -14,11 +14,13 @@ import java.util.Scanner;
 public class AccountDashboard {
 
     public static void menu(Scanner input, Account account, AccountDAO accountDAO) {
+        final String accountNumber = account.getAccountNumber();
         TransactionDAO transactionDAO = new TransactionDAOImpl();
         boolean isMenuRunning = true;
 
         while (isMenuRunning) {
             try {
+                account = accountDAO.getAccountById(accountNumber);
                 printMenu();
                 System.out.print("Please select your option: ");
                 String option = input.nextLine();

@@ -1,0 +1,202 @@
+@startuml
+title Simple Banking App - Class Diagram
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "com.rvmchua.bank" {
+    package app {
+        class Main {
+            + {static} main(String[] args): void
+        }
+    }
+
+    package config << utility >>{
+        class DatabaseConnection {
+            - {static} Properties properties
+            - DatabaseConnection()
+            + {static} getConnection(): Connection
+        }
+    }
+
+    package enums {
+        enum TransactionType {
+            WITHDRAW
+            DEPOSIT
+            TRANSFER
+        }
+        enum TransferType {
+            SENDER
+            RECEIVER
+        }
+    }
+
+    package menu {
+
+        class MainMenu {
+            + start(): void
+            - {static} exit(): void
+            - {static} printDisplay(): void
+        }
+        class LoginMenu{
+            - {static} AccountDAO accountDAO
+            - {static} AuthService authService
+            + start(Scanner): void
+            - {static} promptEnterToContinue(Scanner): void
+            - {static} printHeader(): void
+        }
+        class AccountDashboard {
+            + {static} menu(Scanner, Account, AccountDAO): void
+            - {static} printMenu(): void
+            - {static} exit(): void
+        }
+    }
+
+    package dao {
+        interface AccountDAO << interface >>{
+            + getAccountById(String): Account
+            + createAccount(Account): boolean
+            + updateAccountProfile(Account): boolean
+            + deleteAccount(String): boolean
+            + doesAccountExists(String): boolean
+            + updateBalance(String, BigDecimal): boolean
+            + getAllAccounts(): boolean
+
+        }
+        interface TransactionDAO << interface >>{
+            + saveTransaction(Transaction): void
+            + getTransactionHistory(String): List<Transaction>
+            + getTransactionById(String)
+            + getLatestTransaction(String)
+
+        }
+        package impl {
+            class AccountDAOImpl {
+            + getAccountById(String): Account
+            + createAccount(Account): boolean
+            + updateAccountProfile(Account): boolean
+            + deleteAccount(String): boolean
+            + doesAccountExists(String): boolean
+            + updateBalance(String, BigDecimal): boolean
+            + getAllAccounts(): boolean
+            }
+            class TransactionDAOImpl {
+            + saveTransaction(Transaction): void
+            + getTransactionHistory(String): List<Transaction>
+            + getTransactionById(String)
+            + getLatestTransaction(String)
+            }
+
+        }
+    }
+
+
+    package model {
+        class Account {
+            - String accountNumber;
+            - String firstName;
+            - String lastName;
+            - int pinCode;
+            - BigDecimal balance;
+            - LocalDateTime createdAt;
+            - LocalDateTime updatedAt;
+            + Account()
+            + Account (allArgs)
+            + getAccountNumber(): String
+            + getFirstName(): String
+            + getLastName(): String
+            + getPinCode(): int
+            + getBalance(): BigDecimal
+            + getCreatedAt(): LocalDateTime
+            + getUpdatedAt(): LocalDateTime
+            + setAccountNumber(String): void
+            + setFirstName(String): void
+            + setLastName(String): void
+            + setPinCode(int): void
+            + setBalance(BigDecimal): void
+            + setCreatedAt(LocalDateTime): void
+            + setUpdatedAt(LocalDateTime): void
+
+        }
+        class Transaction {
+            - String transactionId
+            - String accountNumber
+            - TransactionType transactionType
+            - BigDecimal amount
+            - BigDecimal balanceAfter
+            - LocalDateTime createdAt
+            + Transaction()
+            + Transaction (allArgs)
+            + getTransactionId(): String
+            + getAccountNumber(): String
+            + getTransactionType(): TransactionType
+            + getAmount(): BigDecimal
+            + getBalanceAfter(): BigDecimal
+            + getCreatedAt(): LocalDateTime
+            + setTransactionId(String): void
+            + setAccountNumber(String): void
+            + setTransactionType(TransactionType): void
+            + setAmount(BigDecimal): void
+            + setBalanceAfter(BigDecimal): void
+            + setCreatedAt(LocalDateTime): void
+          }
+
+    }
+
+    package service {
+        class AccountService {
+            + {static} findAccountByNumber(String, AccountDAO): Account
+            + {static} createNewAccount(Scanner): void
+            + {static} balanceInquiry(Account, Scanner): void
+            + {static} showAllAccounts(Scanner): void
+            - {static} printHeader(): void
+            - {static} promptEnter(Scanner): void
+        }
+        class AuthService {
+            - AccountDAO
+            + AuthService()
+            + AuthService(AccountDAO)
+            + authenticate(String, int): Optional<Account>
+        }
+        class TransactionService {
+            - {static} DateTimeFormatter formatter
+            + {static} withdraw(Account, AccountDAO, TransactionDAO, Scanner): void
+            + {static} deposit(Account, AccountDAO, TransactionDAO, Scanner): void
+            + {static} transfer(Account, AccountDAO, TransactionDAO, Scanner): void
+            + {static} findTransactionById(TransactionDAO, Scanner): void
+            + {static} transactionHistory(String, TransactionDAO, Scanner): void
+            + {static} initialDeposit(Account): void
+            - {static} insufficientFunds(Account, BigDecimal): void
+            - {static} buildTransaction(Account, TransactionType, BigDecimal, TransactionDAO, Scanner): void
+            - {static} buildTransaction(Account, TransactionType, TransferType, BigDecimal, TransactionDAO, Scanner): void
+            - {static} promptEnterToContinue(): void
+        }
+    }
+
+    package util {
+        class AccountNumberMaker << utility >>{
+            + {static} randomAccountNumber(): int
+        }
+    }
+
+    Main .r.> MainMenu
+    MainMenu --> AccountService
+    MainMenu --> AuthService
+    MainMenu --> LoginMenu
+    LoginMenu --> AccountDashboard
+
+    AccountDashboard --> TransactionService
+    AuthService --> AccountDAO
+    AccountService --> AccountDAO
+    AccountService ..> AccountNumberMaker
+    TransactionService --> AccountDAO
+    TransactionService --> TransactionDAO
+
+    AccountDAOImpl ..|> AccountDAO
+    TransactionDAOImpl ..|> TransactionDAO
+    AccountDAOImpl --> DatabaseConnection
+    TransactionDAOImpl --> DatabaseConnection
+
+    Transaction --> TransactionType
+    TransactionService ..> TransferType
+}
+@enduml

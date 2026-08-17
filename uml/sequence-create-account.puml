@@ -1,0 +1,37 @@
+@startuml
+actor       "Customer"          as  c1
+participant "Main Menu"         as  main
+participant "AccountService"    as  accSvc
+participant "AccountDAOImpl"    as  accDAO
+database    "MySQL"             as  db
+
+c1 -> main : Select option 1 "Create account"
+Activate main
+main -> accSvc : createNewAccount()
+Activate accSvc
+accSvc --> c1 : Prompt ("Enter your first name")
+c1 -> accSvc : firstName
+accSvc --> c1 : Prompt ("Enter your last name")
+c1 -> accSvc : lastName
+accSvc --> c1 : Prompt ("Enter your 4-6 digit PIN")
+c1 -> accSvc : pinCode
+accSvc --> c1 : Prompt ("Enter initial deposit amount")
+c1 -> accSvc : amountDeposit
+
+accSvc -> accSvc : Generate randomAccountNumber()
+accSvc -> accDAO : doesAccountExists(randomAccountNumber)
+Activate accDAO
+
+accDAO -> db : SELECT EXISTS(SELECT 1 FROM (...) WHERE (...))
+db --> accDAO : ResultSet = false
+accDAO --> accSvc : doesAccountExists = false
+
+accSvc -> accSvc : build new Account(accountNumber, firstName, lastName, pinCode, deposit)
+accSvc -> accDAO : createAccount(account)
+accDAO -> db : INSERT INTO accounts (...) VALUES (...)
+db --> accDAO : ResultSet = 1
+Deactivate accDAO
+
+accSvc --> c1 : "Successfully created account" [DETAILS]
+
+@enduml

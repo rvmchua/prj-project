@@ -2,10 +2,11 @@ package com.rvmchua.bank.service;
 
 import com.rvmchua.bank.dao.AccountDAO;
 import com.rvmchua.bank.dao.TransactionDAO;
+import com.rvmchua.bank.dao.impl.TransactionDAOImpl;
 import com.rvmchua.bank.model.Account;
 import com.rvmchua.bank.model.Transaction;
-import com.rvmchua.bank.model.enums.TransactionType;
-import com.rvmchua.bank.model.enums.TransferType;
+import com.rvmchua.bank.enums.TransactionType;
+import com.rvmchua.bank.enums.TransferType;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
@@ -13,32 +14,46 @@ import java.util.List;
 import java.util.Scanner;
 
 public class TransactionService {
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy hh:mm:ss a");
 
     public static void withdraw(Account account, AccountDAO accountDAO, TransactionDAO transactionDAO, Scanner input) {
         BigDecimal newBalance;
-        boolean accountResult = false;
         String accountNumber = account.getAccountNumber();
         Transaction latestTransaction;
 
         TransactionType type = TransactionType.WITHDRAW;
 
-        while (!accountResult) {
+        boolean withdrawSuccess = false;
+        while (!withdrawSuccess) {
             System.out.print("Enter amount to withdraw: Php ");
-            BigDecimal amount = new BigDecimal(input.next());
+            BigDecimal amount = new BigDecimal(input.next().trim());
 
-            if (isSufficientFunds(account, amount)) {
+            try {
+                if (amount.compareTo(BigDecimal.ZERO) < 0) {
+                    System.out.println("Withdrawal amount must be greater than zero.");
+                    continue;
+                }
+
+                if (insufficientFunds(account, amount)) {
+                    System.out.println("Insufficient funds! Your current balance is: Php " + account.getBalance());
+                    continue;
+                }
+
                 newBalance = account.getBalance().subtract(amount);
-                accountResult = accountDAO.updateBalance(account.getAccountNumber(), newBalance);
+                accountDAO.updateBalance(account.getAccountNumber(), newBalance);
+
                 transactionDAO.saveTransaction(buildTransaction(account, type, amount, newBalance));
                 latestTransaction = transactionDAO.getLatestTransaction(account.getAccountNumber());
+                withdrawSuccess = true;
+
                 System.out.println("-----------------------------------------------------");
-                System.out.println("Your transaction ID: " + latestTransaction.getTransactionId());
-                System.out.println("You withdrawn: Php " + amount);
-                System.out.println("Your balance: Php " + newBalance);
+                System.out.println("Transaction ID: " + latestTransaction.getTransactionId());
+                System.out.println("Withdrawal amount: Php " + amount);
+                System.out.println("Current balance: Php " + newBalance);
                 System.out.println("-----------------------------------------------------");
-                account = accountDAO.getAccountById(accountNumber);
-            } else {
-                System.out.println("Insufficient funds!");
+
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid amount entered! Please enter a valid number.");
             }
         }
         input.nextLine();
@@ -47,32 +62,39 @@ public class TransactionService {
 
     public static void deposit(Account account, AccountDAO accountDAO, TransactionDAO transactionDAO, Scanner input) {
         BigDecimal newBalance;
-        boolean accountResult = false;
-        boolean transactionResult;
         Transaction latestTransaction;
         String accountNumber = account.getAccountNumber();
 
         TransactionType type = TransactionType.DEPOSIT;
 
-        while (!accountResult) {
+        boolean depositSuccess = false;
+        while (!depositSuccess) {
             System.out.print("Enter amount to deposit: Php ");
-            BigDecimal amount = new BigDecimal(input.next());
-            newBalance = account.getBalance().add(amount);
-            accountResult = accountDAO.updateBalance(account.getAccountNumber(), newBalance);
-            transactionResult = transactionDAO.saveTransaction(buildTransaction(account, type, amount, newBalance));
+            BigDecimal amount = new BigDecimal(input.next().trim());
 
-            if (!accountResult || !transactionResult) {
-                System.out.println("Unable to deposit funds! Try again later!");
-                break;
+            try {
+                if (amount.compareTo(BigDecimal.ZERO) < 0) {
+                    System.out.println("Deposit amount must be greater than zero.");
+                    continue;
+                }
+                newBalance = account.getBalance().add(amount);
+                accountDAO.updateBalance(account.getAccountNumber(), newBalance);
+                transactionDAO.saveTransaction(buildTransaction(account, type, amount, newBalance));
+
+                latestTransaction = transactionDAO.getLatestTransaction(account.getAccountNumber());
+                depositSuccess = true;
+                System.out.println("-----------------------------------------------------");
+                System.out.println("Transaction ID: " + latestTransaction.getTransactionId());
+                System.out.println("You deposited: Php " + amount);
+                System.out.println("Your balance: Php " + newBalance);
+                System.out.println("-----------------------------------------------------");
+
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid amount entered! Please enter a valid number.");
             }
-            account = accountDAO.getAccountById(accountNumber);
-            latestTransaction = transactionDAO.getLatestTransaction(account.getAccountNumber());
-            System.out.println("-----------------------------------------------------");
-            System.out.println("Your transaction ID: " + latestTransaction.getTransactionId());
-            System.out.println("You deposited: Php " + amount);
-            System.out.println("Your balance: Php " + newBalance);
-            System.out.println("-----------------------------------------------------");
+
         }
+
         input.nextLine();
         promptEnterToContinue(input);
     }
@@ -117,7 +139,7 @@ public class TransactionService {
                     continue;
                 }
 
-                if (!isSufficientFunds(sender, amount)) {
+                if (insufficientFunds(sender, amount)) {
                     System.out.println("Insufficient funds! Your current balance is: Php " + sender.getBalance());
                     continue;
                 }
@@ -140,9 +162,9 @@ public class TransactionService {
 
                     Transaction latestTransaction = transactionDAO.getLatestTransaction(sender.getAccountNumber());
                     System.out.println("-----------------------------------------------------");
-                    System.out.println("Your transaction ID: " + latestTransaction.getTransactionId());
-                    System.out.println("Successfully transferred " + amount + " from " + sender.getAccountNumber() + " to " + receiver.getAccountNumber());
-                    System.out.println("Your current balance: Php " + sender.getBalance());
+                    System.out.println("Transaction ID: " + latestTransaction.getTransactionId());
+                    System.out.println("Successfully transferred Php " + amount + " from Account: " + sender.getAccountNumber() + " to Account: " + receiver.getAccountNumber());
+                    System.out.println("Current balance: Php " + sender.getBalance());
                     System.out.println("-----------------------------------------------------");
                 } else {
                     System.out.println("Database update failed. Please try again later.");
@@ -162,11 +184,19 @@ public class TransactionService {
 
         while (!txnResult) {
             System.out.print("Please enter the transaction id: ");
-            String txnId = input.nextLine();
+            String txnId = input.nextLine().trim();
             Transaction transaction = transactionDAO.getTransactionById(txnId);
 
             if (transaction != null) {
-                System.out.println("Your transaction: " + transaction);
+                System.out.println("-----------------------------------------------------");
+                System.out.println("Transaction Details");
+                System.out.println("-----------------------------------------------------");
+                System.out.println("Transaction ID: " + transaction.getTransactionId());
+                System.out.println("Transaction Type: " + transaction.getTransactionType());
+                System.out.println("Amount: Php " + transaction.getAmount());
+                System.out.println("Remaining balance: Php " + transaction.getBalanceAfter());
+                System.out.println("Date of transaction: " + transaction.getCreatedAt().format(formatter));
+                System.out.println("-----------------------------------------------------");
                 txnResult = true;
             } else {
                 System.out.println("Unable to find transaction with id: " + txnId);
@@ -201,13 +231,18 @@ public class TransactionService {
         promptEnterToContinue(input);
     }
 
+    public static void initialDeposit(Account account) {
+        TransactionType type = TransactionType.DEPOSIT;
+        TransactionDAO transactionDAO = new TransactionDAOImpl();
+        transactionDAO.saveTransaction(buildTransaction(account, type, account.getBalance(), account.getBalance()));
+    }
 
 //    Helper methods
-    private static boolean isSufficientFunds(Account account, BigDecimal amount) {
+    private static boolean insufficientFunds(Account account, BigDecimal amount) {
         if (account == null || account.getBalance() == null) {
-            return false;
+            return true;
         }
-        return account.getBalance().compareTo(amount) >= 0;
+        return account.getBalance().compareTo(amount) < 0;
     }
 
     private static Transaction buildTransaction (Account account, TransactionType type, BigDecimal amount, BigDecimal balance) {
