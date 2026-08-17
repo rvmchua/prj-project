@@ -92,7 +92,6 @@ public class TransactionService {
             } catch (NumberFormatException e) {
                 System.out.println("Invalid amount entered! Please enter a valid number.");
             }
-
         }
 
         input.nextLine();
@@ -154,8 +153,10 @@ public class TransactionService {
                     sender.setBalance(newBalanceSender);
                     receiver.setBalance(newBalanceReceiver);
 
-                    transactionDAO.saveTransaction(buildTransaction(sender, type, TransferType.SENDER, amount, newBalanceSender));
-                    transactionDAO.saveTransaction(buildTransaction(receiver, type, TransferType.RECEIVER, amount, newBalanceReceiver));
+                    transactionDAO.saveTransaction(buildTransaction(sender, type, TransferType.SENDER,
+                            amount, newBalanceSender));
+                    transactionDAO.saveTransaction(buildTransaction(receiver, type, TransferType.RECEIVER,
+                            amount, newBalanceReceiver));
 
                     transferSuccess = true;
                     sender = accountDAO.getAccountById(accountNumber);
@@ -163,7 +164,8 @@ public class TransactionService {
                     Transaction latestTransaction = transactionDAO.getLatestTransaction(sender.getAccountNumber());
                     System.out.println("-----------------------------------------------------");
                     System.out.println("Transaction ID: " + latestTransaction.getTransactionId());
-                    System.out.println("Successfully transferred Php " + amount + " from Account: " + sender.getAccountNumber() + " to Account: " + receiver.getAccountNumber());
+                    System.out.println("Successfully transferred Php " + amount + " from Account: " +
+                            sender.getAccountNumber() + " to Account: " + receiver.getAccountNumber());
                     System.out.println("Current balance: Php " + sender.getBalance());
                     System.out.println("-----------------------------------------------------");
                 } else {

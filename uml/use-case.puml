@@ -1,4 +1,5 @@
 @startuml
+skinparam linetype polyline
 actor "Bank Customer" as user
 
 actor MySQL as db <<database>>
